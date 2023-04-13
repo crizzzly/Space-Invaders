@@ -45,6 +45,7 @@ class SpaceInvaders:
         self.game_is_on = True
 
         self.blasts = []
+        self.alien_blasts = []
         self.invaders = []
 
         self.draw_game()
@@ -105,20 +106,33 @@ class SpaceInvaders:
             x1 = self.ship.xcor() - 15
             x2 = self.ship.xcor() + 12
             y = self.ship.ycor() + 5
+            b1 = Blast([x1, y])
+            b2 = Blast([x2, y])
+            self.blasts.append(b1)
+            self.blasts.append(b2)
         else:
-            x1 = pos[0] - 15
+            x1 = pos[0] #- 15
             x2 = pos[0] + 12
             y = pos[1] - 5
-        b1 = Blast([x1, y])
-        b2 = Blast([x2, y])
-        self.blasts.append(b1)
-        self.blasts.append(b2)
+            # b1 = Blast([x1, y])
+            b2 = Blast([x1, y])
+            # self.alien_blasts.append(b1)
+            self.alien_blasts.append(b2)
+
         self.screen.update()
 
 
     def start_game(self):
         while self.game_is_on:
 
+            if self.alien_blasts:
+                for b in self.alien_blasts:
+                    b.move()
+                    if is_collided_with(b, self.ship):
+                        print("collision with ship")
+                        self.ship.destroy()
+                        b.destroy()
+                        self.alien_blasts.remove(b)
             # Move Blasts upwards
             if self.blasts:
                 print(f'{len(self.blasts)} blasts')
@@ -135,6 +149,9 @@ class SpaceInvaders:
             # Move Aliens downwards
             for alien in self.invaders:
                 alien.move()
+                # Let aliens shoot once in a while
+                if random() < 0.0007:
+                    self.fire([alien.xcor(), alien.ycor()])
                 # Check collision between blasts and alien
                 for b in self.blasts:
                     if is_collided_with(b, alien):
@@ -142,11 +159,8 @@ class SpaceInvaders:
                         b.destroy()
                         self.invaders.remove(alien)
                         self.blasts.remove(b)
-                    if is_collided_with(b, self.ship):
-                        print("collision with ship")
-                        self.ship.destroy()
-                        b.destroy()
-                        self.blasts.remove(b)
+
+
 
             self.screen.update()
 
