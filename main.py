@@ -3,6 +3,7 @@ from turtle import Turtle, Screen
 from spaceship import SpaceShip, Blast
 from invaders import AlienSmall, AlienMiddle, AlienGreen
 from random import random
+from scoreboard import Scoreboard
 
 SCREEN_WIDTH = 600
 SCREEN_HEIGHT = 700
@@ -39,18 +40,32 @@ class SpaceInvaders:
         self.screen.onkeypress(self.ship.move_left, "Left")
         self.screen.onkeypress(self.ship.move_right, "Right")
         self.screen.onkeypress(self.exit_game, "x")
+        self.screen.onkey(self.toggle_gameplay, "space")
         self.screen.onkeypress(self.fire, 'Up')
         self.screen.listen()
 
         self.game_is_on = True
+        self.is_paused = False
 
         self.blasts = []
         self.alien_blasts = []
         self.invaders = []
 
-        self.draw_game()
-        self.start_game()
+        self.pause = Turtle()
+        self.players = [Scoreboard(0), Scoreboard(1)]
+        self.active_player = 0
 
+        self.draw_game()
+        self.play_game()
+
+
+    def toggle_gameplay(self):
+        self.is_paused = not self.is_paused
+        # if not self.game_is_on:
+        #     # self.player_start_text.clear()
+        #     self.game_is_on = True
+        #     self.play_game()
+        print(f'PAUSED = {self.is_paused}')
 
 
     def draw_game(self):
@@ -100,7 +115,7 @@ class SpaceInvaders:
         exit(0)
 
 
-    def fire(self, pos = None):
+    def fire(self, pos=None):
         print("fire")
         if pos is None:
             x1 = self.ship.xcor() - 15
@@ -122,48 +137,65 @@ class SpaceInvaders:
         self.screen.update()
 
 
-    def start_game(self):
+    def play_game(self):
         while self.game_is_on:
+            if self.is_paused:
+                self.screen.update()
+                self.pause.color("white")
+                self.pause.hideturtle()
+                self.pause.pu()
+                self.pause.goto(0, -50)
+                self.pause.write("PAUSE", align="center", font=("Courier", 100, "normal"))
+            else:
+                self.pause.clear()
+                # check if ship got hit
+                if self.alien_blasts:
+                    for b in self.alien_blasts:
+                        b.move()
+                        if is_collided_with(b, self.ship):
+                            print("collision with ship")
+                            self.ship.destroy()
+                            b.destroy()
+                            self.alien_blasts.remove(b)
+                            self.game_is_on = False
 
-            if self.alien_blasts:
-                for b in self.alien_blasts:
-                    b.move()
-                    if is_collided_with(b, self.ship):
-                        print("collision with ship")
-                        self.ship.destroy()
-                        b.destroy()
-                        self.alien_blasts.remove(b)
-            # Move Blasts upwards
-            if self.blasts:
-                print(f'{len(self.blasts)} blasts')
-                for blast in self.blasts:
-                    blast.move()
+                # Move Blasts upwards
+                if self.blasts:
+                    print(f'{len(self.blasts)} blasts')
+                    for blast in self.blasts:
+                        blast.move()
 
-                    # Destroy Blast if out of window
-                    if not LOWER_BORDER < blast.ycor() < UPPER_BORDER:
-                        print("blast destroy")
-                        blast.destroy()
-                        self.blasts.remove(blast)
+                        # Destroy Blast if out of window
+                        if not LOWER_BORDER < blast.ycor() < UPPER_BORDER:
+                            print("blast destroy")
+                            blast.destroy()
+                            self.blasts.remove(blast)
 
 
-            # Move Aliens downwards
-            for alien in self.invaders:
-                alien.move()
-                # Let aliens shoot once in a while
-                if random() < 0.0007:
-                    self.fire([alien.xcor(), alien.ycor()])
-                # Check collision between blasts and alien
-                for b in self.blasts:
-                    if is_collided_with(b, alien):
-                        alien.destroy()
-                        b.destroy()
-                        self.invaders.remove(alien)
-                        self.blasts.remove(b)
+                # Move Aliens downwards
+                for alien in self.invaders:
+                    alien.move()
+                    # Let aliens shoot once in a while
+                    if random() < 0.0007:
+                        self.fire([alien.xcor(), alien.ycor()])
+                    # Check collision between blasts and alien
+                    for b in self.blasts:
+                        if is_collided_with(b, alien):
+                            alien.destroy()
+                            b.destroy()
+                            self.invaders.remove(alien)
+                            self.blasts.remove(b)
+
+                # check if all invaders are destroyed
+                if len(self.invaders) == 0:
+                    self.game_is_on = False
 
 
 
             self.screen.update()
 
+        # TODO: ship destroyed? All aliens gone? - routine for both cases
+        self.screen.update()
         self.screen.exitonclick()
 
 
